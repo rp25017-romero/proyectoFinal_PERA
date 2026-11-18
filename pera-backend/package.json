@@ -1,0 +1,12 @@
+{
+  "name": "pera-backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node servidor.mjs",
+    "test": "node --test pruebas/*.test.mjs"
+  },
+  "dependencies": {
+    "pg": "8.16.3"
+  }
+}
