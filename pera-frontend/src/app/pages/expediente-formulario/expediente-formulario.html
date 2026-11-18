@@ -1,0 +1,24 @@
+<div class="pera-page-header"><h1 class="pera-page-title">Registrar expediente</h1></div>
+<form ngNativeValidate class="pera-card pera-form" (ngSubmit)="guardar()">
+  <div class="pera-form-grid">
+    <label class="pera-field">Carné
+      <input class="pera-input" name="carnet" [(ngModel)]="datos.carnet" maxlength="20" required>
+    </label>
+    <label class="pera-field">Nombre completo
+      <input class="pera-input" name="nombre" [(ngModel)]="datos.nombre" maxlength="120" required>
+    </label>
+    <label class="pera-field">Carrera
+      <select class="pera-select" name="carrera" [(ngModel)]="datos.id_carrera" required>
+        <option [ngValue]="null" disabled>Seleccione una carrera</option>
+        @for (c of carreras(); track c.id_carrera) { <option [ngValue]="c.id_carrera">{{ c.nombre }}</option> }
+      </select>
+    </label>
+    <label class="pera-field">CUM actual
+      <input class="pera-input" type="number" step="0.01" min="0" max="10" name="cum" [(ngModel)]="datos.cum" required>
+    </label>
+  </div>
+  @if (error()) { <p class="pera-alert pera-alert--danger" role="alert">{{ error() }}</p> }
+  <div class="pera-form-actions"><a class="pera-btn pera-btn--outline" routerLink="/estudiantes">Cancelar</a>
+    <button class="pera-btn" [disabled]="guardando() || !carreras().length">{{ guardando() ? 'Guardando…' : 'Guardar expediente' }}</button>
+  </div>
+</form>
