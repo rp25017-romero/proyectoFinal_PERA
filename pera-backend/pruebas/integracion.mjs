@@ -7,12 +7,13 @@ import { join } from 'node:path';
 import pg from 'pg';
 import { crearHash } from '../claves.mjs';
 import { crearServidor } from '../api.mjs';
+import { probarAgenda } from './agenda.mjs';
 
 test('alta, consulta, regla de UV, duplicados y permisos contra PostgreSQL', async t => {
   const admin = new pg.Client();
   await admin.connect();
   const esquema = 'prueba_' + randomUUID().replaceAll('-', '');
-  const pool = new pg.Pool({ options: '-c search_path=' + esquema });
+  const pool = new pg.Pool({ options: '-c search_path=' + esquema + ',public' });
   let creado = false;
   t.after(async () => {
     await pool.end();
@@ -21,7 +22,7 @@ test('alta, consulta, regla de UV, duplicados y permisos contra PostgreSQL', asy
   });
   await admin.query('CREATE SCHEMA ' + esquema);
   creado = true;
-  for (const archivo of ['001_expedientes.sql', '002_docentes_tutores.sql', 'demo_expedientes.sql']) {
+  for (const archivo of ['001_expedientes.sql', '002_docentes_tutores.sql', '003_sesiones_calendario.sql', 'demo_expedientes.sql']) {
     const sql = await readFile(join(process.env.PERA_SQL_DIR || '/sql', archivo), 'utf8');
     await pool.query(sql.replace(/^\\set[^\n]*\n/m, ''));
   }
@@ -112,6 +113,9 @@ test('alta, consulta, regla de UV, duplicados y permisos contra PostgreSQL', asy
       assert.equal((await post('docentes/' + primerId, ficha('A'))).status, 200);
       await acceder('coord@example.test');
       assert.equal((await asignar(a)).status, 201);
+    });
+    await t.test('Calendario personal, programación compartida y conflictos simultáneos', async () => {
+      await probarAgenda({ pool, hash, primerId, segundoId, post, get, acceder });
     });
     cookie = adminCookie;
     assert.equal((await post('logout', {})).status, 200);
