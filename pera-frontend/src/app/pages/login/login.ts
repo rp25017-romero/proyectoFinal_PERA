@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Api } from '../../services/expedientes';
+import { Api, Sesion } from '../../services/expedientes';
 
 @Component({ imports: [FormsModule], templateUrl: './login.html' })
 export class Login {
@@ -17,9 +17,9 @@ export class Login {
     this.enviando.set(true);
     this.error.set('');
     try {
-      await this.api.pedir('login', { correo: this.correo, clave: this.clave });
+      const sesion = await this.api.pedir<Sesion>('login', { correo: this.correo, clave: this.clave });
       this.clave = '';
-      await this.router.navigateByUrl('/estudiantes');
+      await this.router.navigateByUrl(['docente','estudiante'].includes(sesion.rol) ? '/calendario' : '/estudiantes');
     } catch (e) { this.error.set((e as Error).message); }
     finally { this.enviando.set(false); }
   }

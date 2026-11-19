@@ -21,5 +21,13 @@
       }</ul>
     } @else { <p class="pera-muted">Todavía no hay tutores asignados.</p> }
   </section>
+  <section class="pera-card pera-mt-4"><h2 class="pera-section-title">Sesiones de tutoría</h2>
+    @if (e.sesiones.length) {
+      <ul>@for (c of e.sesiones; track c.id_sesion) { <li>
+        <strong>{{c.fecha}} · {{c.hora_inicio}}–{{c.hora_fin}}</strong> · {{c.modalidad}} · {{c.ubicacion}}
+        @if(c.cancelada) { <span class="pera-badge">Cancelada</span> }
+      </li> }</ul>
+    } @else { <p class="pera-muted">Todavía no hay sesiones registradas.</p> }
+  </section>
 } @else if (error()) { <p class="pera-alert pera-alert--danger" role="alert">{{ error() }}</p> }
 @else { <p role="status">Cargando expediente…</p> }

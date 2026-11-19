@@ -2,10 +2,18 @@ import { createServer } from 'node:http';
 import { createHash, randomBytes } from 'node:crypto';
 import { verificarClave } from './claves.mjs';
 import { validarExpediente } from './validacion.mjs';
+import { consultarAgenda, guardarSesion, opcionesAgenda } from './agenda.mjs';
 
 import { asignarTutores, errorHttp, exigirRol, guardarDocente, listarDocentes, retirarTutor, tutoresDelExpediente } from './tutores.mjs';
 
 const rolesPersonal = ['administracion', 'jefatura', 'coordinacion'];
+
+function comprobarAcceso(usuario) {
+  if (usuario.rol === 'docente' && usuario.docente_activo) return;
+  if (usuario.rol === 'estudiante' && usuario.carnet_estudiante) return;
+  if (!rolesPersonal.includes(usuario.rol)) throw errorHttp(403, 'La cuenta requiere un perfil activo y vinculado.');
+  if (usuario.rol === 'jefatura') exigirRol(usuario, 'jefatura');
+}
 
 async function leerJson(req) {
   if (req.headers['content-type']?.split(';')[0] !== 'application/json')
@@ -49,12 +57,12 @@ export function crearServidor(db) {
         if (typeof correo !== 'string' || typeof clave !== 'string' || !clave || clave.length > 256)
           throw errorHttp(400, 'Ingrese su correo y contraseña.');
         const { rows: [usuario] } = await db.query(
-          'SELECT id_usuario, clave_hash, rol, id_departamento FROM usuarios WHERE correo = $1 AND activo', [correo.trim().toLowerCase()]
+          `SELECT u.*, d.activo AS docente_activo FROM usuarios u LEFT JOIN docentes d USING(id_docente)
+           WHERE u.correo=$1 AND u.activo`, [correo.trim().toLowerCase()]
         );
         if (!usuario || !await verificarClave(clave, usuario.clave_hash))
           throw errorHttp(401, 'Correo o contraseña incorrectos.');
-        if (!rolesPersonal.includes(usuario.rol)) throw errorHttp(403, 'El acceso de este rol aún no está habilitado.');
-        if (usuario.rol === 'jefatura') exigirRol(usuario, 'jefatura');
+        comprobarAcceso(usuario);
         const token = randomBytes(32).toString('hex');
         await db.query('DELETE FROM sesiones_acceso WHERE expira_en <= now()');
         await db.query("INSERT INTO sesiones_acceso VALUES ($1, $2, now() + interval '8 hours')",
@@ -66,7 +74,8 @@ export function crearServidor(db) {
       const token = req.headers.cookie?.match(/(?:^|;\s*)pera_sesion=([0-9a-f]{64})(?:;|$)/)?.[1];
       if (!token) throw errorHttp(401, 'Inicie sesión para continuar.');
       const { rows: [usuario] } = await db.query(
-        `SELECT u.id_usuario, u.rol, u.id_departamento FROM sesiones_acceso s JOIN usuarios u USING (id_usuario)
+        `SELECT u.id_usuario,u.rol,u.id_departamento,u.id_docente,u.carnet_estudiante,d.activo AS docente_activo
+         FROM sesiones_acceso s JOIN usuarios u USING (id_usuario) LEFT JOIN docentes d ON d.id_docente=u.id_docente
          WHERE s.token_hash = $1 AND s.expira_en > now() AND u.activo`, [huella(token)]
       );
       if (!usuario) throw errorHttp(401, 'La sesión ha caducado. Ingrese de nuevo.');
@@ -75,10 +84,24 @@ export function crearServidor(db) {
         res.setHeader('Set-Cookie', cookieSesion('', 0));
         return responder(res, 200, {});
       }
+      comprobarAcceso(usuario);
+      if (metodo === 'GET' && ruta === '/api/sesion') return responder(res, 200, { rol: usuario.rol, id_docente: usuario.id_docente });
+      if (ruta.startsWith('/api/agenda')) {
+        if (!['docente','estudiante'].includes(usuario.rol)) throw errorHttp(403, 'Acceso exclusivo de los participantes.');
+        if (metodo === 'GET' && ruta === '/api/agenda/opciones') return responder(res,200,await opcionesAgenda(db,usuario));
+        const cita = ruta.match(/^\/api\/agenda(?:\/([1-9]\d{0,9})(\/cancelar)?)?$/);
+        if (cita && Number(cita[1]) > 2147483647) throw errorHttp(404, 'Sesión no encontrada.');
+        if (cita && metodo === 'GET' && !cita[2])
+          return responder(res,200,await consultarAgenda(db,usuario,url.searchParams.get('mes'),cita[1]));
+        if (cita && metodo === 'POST') {
+          exigirRol(usuario,'docente');
+          const guardado = await guardarSesion(db,usuario,cita[1],await leerJson(req),Boolean(cita[2]));
+          return responder(res,cita[1] ? 200 : 201,guardado);
+        }
+        throw errorHttp(404, 'Ruta de calendario no encontrada.');
+      }
       if (!rolesPersonal.includes(usuario.rol)) throw errorHttp(403, 'Permisos insuficientes.');
       const departamento = usuario.rol === 'jefatura' ? usuario.id_departamento : null;
-      if (usuario.rol === 'jefatura') exigirRol(usuario, 'jefatura');
-      if (metodo === 'GET' && ruta === '/api/sesion') return responder(res, 200, { rol: usuario.rol });
       if (metodo === 'GET' && ruta === '/api/docentes') return responder(res, 200, await listarDocentes(db, usuario));
       const docente = ruta.match(/^\/api\/docentes\/(\d{1,9})$/);
       if (metodo === 'POST' && (ruta === '/api/docentes' || docente)) {
@@ -136,7 +159,8 @@ export function crearServidor(db) {
           [detalle[1].toUpperCase(), departamento]);
         if (!estudiante) throw errorHttp(404, 'El expediente no existe.');
         const tutoresAsignados = await tutoresDelExpediente(db, estudiante.carnet);
-        return responder(res, 200, { ...estudiante, tutores: tutoresAsignados });
+        const sesiones = await db.query('SELECT * FROM vista_sesiones WHERE carnet=$1 ORDER BY fecha DESC,hora_inicio DESC,id_sesion DESC', [estudiante.carnet]);
+        return responder(res, 200, { ...estudiante, tutores: tutoresAsignados, sesiones: sesiones.rows });
       }
       throw errorHttp(404, 'Ruta no encontrada.');
     } catch (error) {

@@ -1,0 +1,15 @@
+.agenda-layout { display:grid; grid-template-columns:minmax(260px, 360px) minmax(0,1fr); align-items:start; gap:20px; }
+.mes, .dias { display:grid; align-items:center; text-align:center; }
+.mes { grid-template-columns:auto 1fr auto; margin-bottom:14px; }
+.mes h2 { margin:0; text-transform:capitalize; }
+.mes button, .dias button { border:0; background:transparent; color:inherit; cursor:pointer; border-radius:6px; }
+.mes button { font-size:1.7rem; padding:0 10px; }
+.dias { grid-template-columns:repeat(7, minmax(0,1fr)); margin-bottom:16px; gap:2px; }
+.dias b { font-size:.8rem; padding:6px 0; }
+.dias button { position:relative; min-height:36px; }
+.dias .hoy { box-shadow:inset 0 0 0 1px var(--pera-primary); }
+.dias .elegido { background:var(--pera-primary); color:white; }
+.punto { position:absolute; left:calc(50% - 2px); bottom:2px; width:5px; height:5px; border-radius:50%; background:currentColor; }
+.cita { padding:14px 0; border-top:1px solid var(--pera-border); overflow-wrap:anywhere; }
+.cita p { margin:3px 0; }
+@media(max-width:720px) { .agenda-layout { grid-template-columns:minmax(0,1fr); } }

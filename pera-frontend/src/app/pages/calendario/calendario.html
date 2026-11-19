@@ -1,0 +1,41 @@
+<header class="pera-page-header"><h1 class="pera-page-title">Mi calendario de tutorías</h1>
+  @if (cuenta()?.rol === 'docente') {
+    <a class="pera-btn" routerLink="/sesiones/nueva" [queryParams]="{fecha:dia() || (mes() === hoy.slice(0,7) ? hoy : mes()+'-01')}">Programar sesión</a>
+  }
+</header>
+<div class="agenda-layout">
+  <section class="pera-card almanaque" aria-label="Calendario mensual">
+    <div class="mes"><button type="button" aria-label="Mes anterior" (click)="cambiar(-1)">‹</button>
+      <h2 class="pera-section-title">{{ titulo() }}</h2>
+      <button type="button" aria-label="Mes siguiente" (click)="cambiar(1)">›</button></div>
+    <div class="dias">@for (d of dias; track d) { <b>{{ d }}</b> }
+      @for (c of casillas(); track $index) {
+        @if (c) {
+          <button type="button" [class.elegido]="dia()===c.fecha" [class.hoy]="hoy===c.fecha" [attr.aria-pressed]="dia()===c.fecha"
+            [attr.aria-label]="c.fecha+', '+c.cantidad+' sesiones programadas'" (click)="dia.set(c.fecha)">{{ c.numero }}
+            @if(c.cantidad) { <span class="punto" aria-hidden="true"></span> }</button>
+        } @else { <span></span> }
+      }
+    </div>
+    <button type="button" class="pera-btn pera-btn--outline" (click)="dia.set('')">Ver todo el mes</button>
+  </section>
+  <section class="pera-card"><h2 class="pera-section-title">{{ dia() ? 'Sesiones del '+dia() : 'Sesiones del mes' }}</h2>
+    <p class="pera-muted">Horario de El Salvador</p>
+    @if(error()) { <p class="pera-alert pera-alert--danger" role="alert">{{error()}}</p> }
+    @else if(cargando()) { <p role="status">Cargando calendario…</p> }
+    @else {
+      @for(c of visibles(); track c.id_sesion) {
+        <article class="cita">
+          <strong>{{c.fecha}} · {{c.hora_inicio}}–{{c.hora_fin}}</strong>
+          <p>{{c.estudiante}} · {{c.carnet}}</p>
+          <p>{{c.modalidad}} · @if(c.modalidad === 'Virtual' && !c.cancelada) {
+            <a [href]="c.ubicacion" target="_blank" rel="noopener noreferrer">Abrir enlace de reunión</a>
+          } @else { {{c.ubicacion}} }</p>
+          <p>Tutores: @for(t of c.tutores; track t.id_docente; let ultimo=$last) { {{t.nombre}}{{ultimo ? '' : ','}} }</p>
+          @if(c.cancelada) { <span class="pera-badge">Cancelada</span> }
+          @else if(cuenta()?.id_docente === c.organizador) { <a [routerLink]="['/sesiones',c.id_sesion,'editar']">Modificar sesión</a> }
+        </article>
+      } @empty { <p class="pera-empty">No hay sesiones para este período.</p> }
+    }
+  </section>
+</div>

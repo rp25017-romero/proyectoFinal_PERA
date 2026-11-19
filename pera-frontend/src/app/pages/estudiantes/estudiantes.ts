@@ -20,7 +20,9 @@ export class Estudiantes implements OnInit {
 
   async ngOnInit() {
     try {
-      this.rol.set((await this.api.pedir<Sesion>('sesion')).rol);
+      const { rol } = await this.api.pedir<Sesion>('sesion');
+      if (rol === 'docente' || rol === 'estudiante') return;
+      this.rol.set(rol);
       this.carreras.set(await this.api.pedir<Carrera[]>('carreras'));
       await this.buscar();
     } catch (e) { this.error.set((e as Error).message); this.cargando.set(false); }

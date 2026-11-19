@@ -1,0 +1,39 @@
+<a routerLink="/calendario">Volver al calendario</a>
+<header class="pera-page-header"><h1 class="pera-page-title">{{ id ? 'Modificar sesión' : 'Programar sesión' }}</h1></header>
+@if(error()) { <p class="pera-alert pera-alert--danger" role="alert">{{error()}}</p> }
+@if(listo()) {
+  @if(opciones().length && (!id || tutores.length)) {
+    <form ngNativeValidate class="pera-form pera-card" (ngSubmit)="guardar()">
+      <label class="pera-field">Estudiante
+        <select class="pera-select" name="carnet" [(ngModel)]="carnet" (ngModelChange)="seleccion=[yo]" [disabled]="!!id" required>
+          <option value="" disabled>Seleccione un estudiante asignado</option>
+          @for(e of opciones(); track e.carnet) { <option [value]="e.carnet">{{e.nombre}} · {{e.carnet}}</option> }
+        </select></label>
+      @if(carnet) {
+        <fieldset><legend>Tutores participantes</legend>
+          @for(t of tutores; track t.id_docente) { <label class="pera-check">
+            <input type="checkbox" #casilla [checked]="seleccion.includes(t.id_docente)" [disabled]="t.id_docente===yo"
+              (change)="marcar(t.id_docente,casilla.checked)"> {{t.nombre}} {{t.id_docente===yo ? '(organizador)' : ''}}</label> }
+        </fieldset>
+      }
+      <div class="pera-form-grid">
+        <label class="pera-field">Fecha<input type="date" class="pera-input" name="fecha" [(ngModel)]="fecha" required></label>
+        <label class="pera-field">Modalidad<select class="pera-select" name="modalidad" [(ngModel)]="modalidad">
+          <option>Presencial</option><option>Virtual</option></select></label>
+        <label class="pera-field">Hora de inicio<input type="time" class="pera-input" name="inicio" [(ngModel)]="inicio" required></label>
+        <label class="pera-field">Hora de fin<input type="time" class="pera-input" name="fin" [(ngModel)]="fin" required></label>
+      </div>
+      <label class="pera-field">{{ modalidad === 'Virtual' ? 'Enlace de reunión' : 'Lugar o aula' }}
+        <input [type]="modalidad === 'Virtual' ? 'url' : 'text'" class="pera-input" name="ubicacion" [(ngModel)]="ubicacion" required maxlength="300"></label>
+      <div class="pera-form-actions"><a routerLink="/calendario" class="pera-btn pera-btn--outline">Volver</a>
+        <button class="pera-btn" [disabled]="enviando()">{{id ? 'Guardar cambios' : 'Guardar sesión'}}</button></div>
+    </form>
+  } @else { <p class="pera-card">Para programar, Coordinación debe asignarle un estudiante de su departamento.</p> }
+  @if(id) {
+    @if(confirmar()) {
+      <p>¿Cancelar esta tutoría y liberar el horario de los participantes?</p>
+      <button type="button" class="pera-btn pera-btn--outline" [disabled]="enviando()" (click)="confirmar.set(false)">Conservar sesión</button>
+      <button type="button" class="pera-btn pera-btn--danger" [disabled]="enviando()" (click)="guardar(true)">Confirmar cancelación</button>
+    } @else { <button type="button" class="pera-btn pera-btn--ghost" (click)="confirmar.set(true)">Cancelar tutoría</button> }
+  }
+} @else if(!error()) { <p role="status">Cargando formulario…</p> }
