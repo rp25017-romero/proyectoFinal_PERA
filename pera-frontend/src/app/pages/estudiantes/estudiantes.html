@@ -1,0 +1,43 @@
+<div class="pera-page-header">
+  <div>@if (rol(); as r) { <p class="pera-eyebrow">{{ nombres[r] }}</p> }<h1 class="pera-page-title">Expedientes de estudiantes</h1></div>
+  @if (rol() === 'administracion') { <a class="pera-btn" routerLink="/expedientes/nuevo">Registrar expediente</a> }
+  @if (rol() === 'jefatura') { <a class="pera-btn" routerLink="/docentes">Administrar docentes</a> }
+</div>
+@if (rol() === 'coordinacion') { <p>Abra el expediente del estudiante para asignar sus tutores.</p> }
+<section class="pera-card">
+  <form class="pera-filter-bar" (ngSubmit)="buscar()">
+    <label class="pera-field">Buscar por carné
+      <input type="search" class="pera-input" [(ngModel)]="carnet" name="carnet" maxlength="20">
+    </label>
+    <label class="pera-field">Carrera
+      <select class="pera-select" [(ngModel)]="carrera" name="carrera">
+        <option value="">Todas las carreras</option>
+        @for (c of carreras(); track c.id_carrera) { <option [value]="c.nombre">{{ c.nombre }}</option> }
+      </select>
+    </label>
+    <button class="pera-btn pera-btn--secondary" [disabled]="cargando()">Buscar</button>
+  </form>
+  @if (error()) {
+    <p class="pera-alert pera-alert--danger" role="alert">{{ error() }}</p>
+  } @else if (cargando()) {
+    <p role="status">Cargando expedientes…</p>
+  } @else if (filas().length === 0) {
+    <p class="pera-empty">No se encontraron expedientes.</p>
+  } @else {
+    <div class="pera-table-wrap"><table class="pera-table">
+      <caption class="pera-sr-only">Estudiantes referidos al PERA</caption>
+      <thead><tr><th scope="col">Carné</th><th scope="col">Nombre</th><th scope="col">Carrera</th><th scope="col">Estado PERA</th></tr></thead>
+      <tbody>@for (fila of filas(); track fila.carnet) {
+        <tr><td><a [routerLink]="['/expedientes', fila.carnet]">{{ fila.carnet }}</a></td><td>{{ fila.nombre }}</td><td>{{ fila.carrera }}</td>
+          <td><span class="pera-badge">{{ fila.estado_pera }}</span></td></tr>
+      }</tbody>
+    </table></div>
+    @if (pagina() > 1 || hayMas()) {
+      <nav class="pera-pagination" aria-label="Páginas de expedientes">
+        <button class="pera-btn pera-btn--outline" [disabled]="pagina() === 1" (click)="cargar(pagina()-1)">Anterior</button>
+        <span>Página {{ pagina() }}</span>
+        <button class="pera-btn pera-btn--outline" [disabled]="!hayMas()" (click)="cargar(pagina()+1)">Siguiente</button>
+      </nav>
+    }
+  }
+</section>

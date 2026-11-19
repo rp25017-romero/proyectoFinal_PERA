@@ -1,0 +1,33 @@
+<a routerLink="/estudiantes">Volver a estudiantes</a>
+<header class="pera-page-header"><div><p class="pera-eyebrow">Jefatura de Departamento</p>
+  <h1 class="pera-page-title">Administrar docentes</h1></div></header>
+<section class="pera-card pera-section">
+  <h2 class="pera-section-title">{{ id() ? 'Editar docente' : 'Registrar docente' }}</h2>
+  <form ngNativeValidate class="pera-form" (ngSubmit)="guardar()">
+    <div class="pera-form-grid">
+      <label class="pera-field">Código docente<input class="pera-input" name="codigo" [(ngModel)]="datos.codigo" maxlength="20" required></label>
+      <label class="pera-field">Nombre completo<input class="pera-input" name="nombre" [(ngModel)]="datos.nombre" maxlength="120" required></label>
+      <label class="pera-field">Correo electrónico<input type="email" class="pera-input" name="correo" [(ngModel)]="datos.correo" maxlength="254" required></label>
+      @if (id()) { <label class="pera-check"><input type="checkbox" name="activo" [(ngModel)]="datos.activo"> Activo para nuevas asignaciones</label> }
+    </div>
+    <div class="pera-form-actions">
+      @if (id()) { <button type="button" class="pera-btn pera-btn--outline" [disabled]="ocupado()" (click)="editar()">Cancelar edición</button> }
+      <button class="pera-btn" [disabled]="ocupado()">{{ id() ? 'Guardar cambios' : 'Registrar docente' }}</button>
+    </div>
+  </form>
+  @if (error()) { <p class="pera-alert pera-alert--danger" role="alert">{{ error() }}</p> }
+  @if (mensaje()) { <p class="pera-alert pera-alert--success" role="status">{{ mensaje() }}</p> }
+</section>
+<section class="pera-card">
+  <h2 class="pera-section-title">Docentes del departamento</h2>
+  @if (lista().length) {
+    <div class="pera-table-wrap"><table class="pera-table">
+      <thead><tr><th>Código</th><th>Nombre</th><th>Correo</th><th>Estado</th><th>Acción</th></tr></thead>
+      <tbody>@for (d of lista(); track d.id_docente) {
+        <tr><td>{{ d.codigo }}</td><td>{{ d.nombre }}</td><td>{{ d.correo }}</td><td>{{ d.activo ? 'Activo' : 'Inactivo' }}</td>
+          <td><button type="button" class="pera-btn pera-btn--outline pera-btn--sm" [attr.aria-label]="'Editar a ' + d.nombre" (click)="editar(d)" [disabled]="ocupado()">Editar</button></td>
+        </tr>
+      }</tbody>
+    </table></div>
+  } @else if (!ocupado() && !error()) { <p class="pera-muted">Aún no hay docentes registrados.</p> }
+</section>

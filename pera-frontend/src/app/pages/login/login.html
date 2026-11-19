@@ -1,0 +1,13 @@
+<section class="pera-auth-card" style="margin: 8vh auto">
+  <h1 class="pera-auth-title">Iniciar sesión</h1>
+  <form ngNativeValidate class="pera-form" (ngSubmit)="ingresar()">
+    <label class="pera-field">Correo electrónico
+      <input class="pera-input" type="email" name="correo" autocomplete="username" [(ngModel)]="correo" required>
+    </label>
+    <label class="pera-field">Contraseña
+      <input class="pera-input" type="password" name="clave" autocomplete="current-password" [(ngModel)]="clave" required>
+    </label>
+    @if (error()) { <p class="pera-alert pera-alert--danger" role="alert">{{ error() }}</p> }
+    <button class="pera-btn" [disabled]="enviando()">{{ enviando() ? 'Ingresando…' : 'Ingresar' }}</button>
+  </form>
+</section>
