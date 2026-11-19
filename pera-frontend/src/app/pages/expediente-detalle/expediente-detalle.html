@@ -11,5 +11,15 @@
       <div><dt>Límite de UV</dt><dd>{{ e.limite_uv === null ? 'Pendiente de regla' : e.limite_uv + ' UV' }}</dd></div>
     </dl>
   </section>
+  <section class="pera-card pera-mt-4">
+    <div class="pera-page-header"><h2 class="pera-section-title">Tutores asignados</h2>
+      @if (puedeAsignar()) { <a class="pera-btn" [routerLink]="['/expedientes', e.carnet, 'asignacion-tutores']">Asignar tutores</a> }
+    </div>
+    @if (e.tutores.length) {
+      <ul>@for (t of e.tutores; track t.id_asignacion) {
+        <li><strong>{{ t.nombre }}</strong> · {{ t.area }} @if (!t.activo) { <span class="pera-badge">Docente inactivo</span> }</li>
+      }</ul>
+    } @else { <p class="pera-muted">Todavía no hay tutores asignados.</p> }
+  </section>
 } @else if (error()) { <p class="pera-alert pera-alert--danger" role="alert">{{ error() }}</p> }
 @else { <p role="status">Cargando expediente…</p> }

@@ -1,0 +1,43 @@
+<a [routerLink]="['/expedientes', carnet]">Volver al expediente</a>
+<header class="pera-page-header"><div><p class="pera-eyebrow">Coordinación PERA</p>
+  <h1 class="pera-page-title">Asignar tutores</h1>
+  @if (estudiante(); as e) { <p class="pera-page-subtitle">{{ e.nombre }} · {{ e.carnet }} · {{ e.carrera }}</p> }
+</div></header>
+@if (error()) { <p class="pera-alert pera-alert--danger" role="alert">{{ error() }}</p> }
+@if (mensaje()) { <p class="pera-alert pera-alert--success" role="status">{{ mensaje() }}</p> }
+@if (estudiante(); as e) {
+  <section class="pera-card pera-section">
+    <h2 class="pera-section-title">Nueva asignación</h2>
+    @if (docentes().length) {
+      <form ngNativeValidate class="pera-form" (ngSubmit)="guardar()">
+        @for (fila of filas; track fila; let i = $index) {
+          <div class="pera-form-grid">
+            <label class="pera-field">Docente
+              <select class="pera-select" [name]="'docente'+i" [(ngModel)]="fila.id_docente" required>
+                <option [ngValue]="null" disabled>Seleccione un docente</option>
+                @for (d of docentes(); track d.id_docente) { <option [ngValue]="d.id_docente">{{ d.nombre }} · {{ d.codigo }} · {{ d.departamento }}</option> }
+              </select>
+            </label>
+            <label class="pera-field">Área de refuerzo
+              <input class="pera-input" [name]="'area'+i" [(ngModel)]="fila.area" required maxlength="120">
+            </label>
+          </div>
+          @if (filas.length > 1) { <button class="pera-btn pera-btn--ghost" type="button" [disabled]="ocupado()" (click)="filas.splice(i, 1)">Quitar fila {{ i+1 }}</button> }
+        }
+        <div class="pera-form-actions">
+          <button type="button" class="pera-btn pera-btn--outline" [disabled]="ocupado()" (click)="filas.push({id_docente:null, area:''})">Agregar otro tutor</button>
+          <button class="pera-btn" [disabled]="ocupado()">Guardar asignaciones</button>
+        </div>
+      </form>
+    } @else if (!ocupado() && !error()) { <p>Jefatura debe registrar o activar un docente para poder asignarlo.</p> }
+  </section>
+  <section class="pera-card"><h2 class="pera-section-title">Asignaciones vigentes</h2>
+    @if (e.tutores.length) { <div class="pera-table-wrap"><table class="pera-table">
+      <thead><tr><th>Docente</th><th>Área</th><th>Acción</th></tr></thead>
+      <tbody>@for (t of e.tutores; track t.id_asignacion) { <tr>
+        <td>{{ t.nombre }} @if (!t.activo) { <span class="pera-badge">Inactivo</span> }</td><td>{{ t.area }}</td>
+        <td><button type="button" class="pera-btn pera-btn--outline pera-btn--sm" [disabled]="ocupado()" (click)="retirar(t)">Retirar asignación</button></td>
+      </tr> }</tbody>
+    </table></div> } @else { <p class="pera-muted">Aún no hay áreas asignadas.</p> }
+  </section>
+}

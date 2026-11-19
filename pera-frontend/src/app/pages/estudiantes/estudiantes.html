@@ -1,7 +1,9 @@
 <div class="pera-page-header">
-  <div><p class="pera-eyebrow">Administración Académica</p><h1 class="pera-page-title">Expedientes de estudiantes</h1></div>
-  <a class="pera-btn" routerLink="/expedientes/nuevo">Registrar expediente</a>
+  <div>@if (rol(); as r) { <p class="pera-eyebrow">{{ nombres[r] }}</p> }<h1 class="pera-page-title">Expedientes de estudiantes</h1></div>
+  @if (rol() === 'administracion') { <a class="pera-btn" routerLink="/expedientes/nuevo">Registrar expediente</a> }
+  @if (rol() === 'jefatura') { <a class="pera-btn" routerLink="/docentes">Administrar docentes</a> }
 </div>
+@if (rol() === 'coordinacion') { <p>Abra el expediente del estudiante para asignar sus tutores.</p> }
 <section class="pera-card">
   <form class="pera-filter-bar" (ngSubmit)="buscar()">
     <label class="pera-field">Buscar por carné

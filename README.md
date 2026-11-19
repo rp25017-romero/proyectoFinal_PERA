@@ -1,6 +1,6 @@
 # PERA · Gestión de tutorías y refuerzo académico
 
-Primer módulo del equipo para Administración Académica. Permite iniciar sesión, registrar un expediente, buscar por carné, filtrar por carrera y consultar el detalle. El frontend conserva Angular y los estilos globales del proyecto. La API de Node.js valida las solicitudes y usa PostgreSQL 17.
+Administración Académica registra y consulta expedientes. Jefatura administra los docentes de su departamento y Coordinación asigna tutores y áreas de refuerzo a cada estudiante. La interfaz Angular se comunica con una API de Node.js y PostgreSQL 17.
 
 ## Ejecutar en la computadora
 
@@ -13,6 +13,7 @@ Requisitos de desarrollo: Docker Desktop con contenedores Linux y Node.js 24 con
 cd infra
 docker compose up -d --build --wait
 docker compose exec -T postgres psql -U pera_user -d pera_db -f /sql/001_expedientes.sql
+docker compose exec -T postgres psql -U pera_user -d pera_db -f /sql/002_docentes_tutores.sql
 docker compose exec -T postgres psql -U pera_user -d pera_db -f /sql/demo_expedientes.sql
 docker compose exec api node crear-admin.mjs admin@example.test
 ```
@@ -35,7 +36,22 @@ Abra [la aplicación local](http://localhost:4200). Angular reenvía `/api` al p
 2. Use los datos ficticios `TEST-01`, `Estudiante de prueba`, la carrera de demostración y CUM `6.50`. Al guardar se abre el detalle con **12 UV**.
 3. Recargue el navegador, vuelva al listado y busque `test-01`. Abra el detalle desde el carné.
 4. Intente registrar el mismo carné en minúsculas. La aplicación debe avisar del duplicado y conservar un solo expediente.
-5. Cierre la sesión. El servidor exige autenticación para leer o registrar expedientes. En esta primera entrega el módulo está habilitado para Administración Académica.
+5. Cierre la sesión. El servidor exige autenticación para leer o registrar expedientes.
+
+## Activar y probar docentes y tutores
+
+Si ya tiene funcionando el módulo de expedientes, conserve la base y su cuenta de Administración. Desde `infra` aplique la migración y reconstruya la API. Cree las dos cuentas de prueba una sola vez. Cada comando de creación muestra una contraseña aleatoria para ese usuario.
+
+```powershell
+docker compose exec -T postgres psql -U pera_user -d pera_db -f /sql/002_docentes_tutores.sql
+docker compose up -d --build --wait api
+docker compose exec api node crear-personal.mjs jefatura@example.test jefatura "Ingeniería y Arquitectura"
+docker compose exec api node crear-personal.mjs coordinacion@example.test coordinacion
+```
+
+1. Entre como Jefatura y abra **Administrar docentes** desde el listado de estudiantes. Registre dos docentes ficticios, cada uno con código y correo propios. Puede editar sus datos o desmarcar **Activo para nuevas asignaciones**. Las asignaciones anteriores conservan el nombre y muestran que el docente está inactivo.
+2. Entre como Coordinación, busque `TEST-01`, abra el expediente y pulse **Asignar tutores**. Seleccione el primer docente y escriba *Cálculo*. Pulse **Agregar otro tutor**, seleccione el segundo y escriba *Programación*. Guarde las dos asignaciones.
+3. Vuelva a entrar como Administración y consulte el expediente. Deben aparecer ambos docentes con sus áreas después de recargar. Coordinación puede retirar una asignación, conservando su fecha y responsable en la base.
 
 ## Pruebas
 
@@ -45,7 +61,7 @@ Desde `infra`, con ambos servicios activos:
 docker compose exec -T api node --test pruebas/base.test.mjs pruebas/integracion.mjs
 ```
 
-La prueba de integración usa un esquema aislado, aplica los dos scripts, comprueba el alta y el duplicado por HTTP, consulta los límites de UV y verifica el cierre de sesión. El esquema de prueba se elimina al terminar.
+La prueba de integración aplica las migraciones y los datos de demostración en un esquema aislado. Comprueba expedientes, límites de UV, sesiones, permisos por departamento, edición de docentes, asignaciones múltiples, duplicados y bajas. El esquema de prueba se elimina al terminar.
 
 Desde `pera-frontend`:
 

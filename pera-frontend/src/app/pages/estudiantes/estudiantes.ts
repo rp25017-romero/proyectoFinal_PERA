@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { Api, Carrera, Fila, Lista } from '../../services/expedientes';
+import { Api, Carrera, Fila, Lista, RolPersonal, Sesion } from '../../services/expedientes';
 
 @Component({ imports: [FormsModule, RouterLink], templateUrl: './estudiantes.html' })
 export class Estudiantes implements OnInit {
@@ -10,6 +10,8 @@ export class Estudiantes implements OnInit {
   carrera = '';
   private filtros = { carnet: '', carrera: '' };
   carreras = signal<Carrera[]>([]);
+  rol = signal<RolPersonal | null>(null);
+  readonly nombres = { administracion: 'Administración Académica', jefatura: 'Jefatura de Departamento', coordinacion: 'Coordinación PERA' };
   filas = signal<Fila[]>([]);
   pagina = signal(1);
   hayMas = signal(false);
@@ -18,6 +20,7 @@ export class Estudiantes implements OnInit {
 
   async ngOnInit() {
     try {
+      this.rol.set((await this.api.pedir<Sesion>('sesion')).rol);
       this.carreras.set(await this.api.pedir<Carrera[]>('carreras'));
       await this.buscar();
     } catch (e) { this.error.set((e as Error).message); this.cargando.set(false); }
